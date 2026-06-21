@@ -1,0 +1,194 @@
+# job_simple.http
+#
+# A minimal job submission for an automated transcoding pipeline.
+# This example uses centrally-stored credentials for the S3 output.
+# You must run a request from credentials.http first for this to work.
+#
+# Variables
+@hostname = http://localhost:8081
+@api_v1 = {{hostname}}/api/v1
+# Generate a unique Job ID for each run
+@job_id = 11223344
+
+###
+# @name SubmitSimpleJob
+# This job has minimal configuration, relying on "auto" modes.
+# It uses the S3 credentials saved via credentials.http.
+POST {{api_v1}}/jobs
+Content-Type: application/json
+
+{
+  "job_label": "Simple Automated Job - {{$timestamp}}",
+  "job_id": "{{job_id}}",
+  "input_storage": {
+    "input_id": "source-{{job_id}}",
+    "provider": "http",
+    "http": {
+      "url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+    }
+  },
+  "output_storage": {
+    "output_id": "dest-{{job_id}}",
+    "provider": "s3",
+    "s3": {
+      "bucket": "media-development-1",
+      "key": "videos/simple/{{job_id}}",
+      "region": "us-east-1"
+    }
+  },
+  "job_settings": {
+    "hardware_acceleration": "auto"
+  },
+  "outputs": {
+    "streaming_package": {
+      "enable": true,
+      "video": {
+        "encoder": "h264_nvenc",
+        "renditions": [
+          {
+            "tag": "1080p",
+            "height": 1080,
+            "encoder": "h264_nvenc",
+            "rate_control": { "mode": "abr", "bitrate": "5000k" }
+          },
+          {
+            "tag": "720p",
+            "height": 720,
+            "encoder": "h264_nvenc",
+            "rate_control": { "mode": "abr", "bitrate": "2800k" }
+          }
+        ]
+      },
+      "audio": { "mode": "auto" },
+      "subtitles": { "mode": "auto" },
+      "packaging": {
+        "segment_duration_seconds": 2,
+        "formats": ["dash", "hls"]
+      }
+    },
+    "thumbnail_gallery": {
+      "enable": true,
+      "format": "vtt_sprite",
+      "interval_seconds": 10,
+      "dimensions": { "width": 160 }
+    }
+  }
+}
+
+
+###
+# @name SubmitSimpleJob GCS
+# This job has minimal configuration, relying on "auto" modes.
+# It uses the S3 credentials saved via credentials.http.
+POST {{api_v1}}/jobs
+Content-Type: application/json
+
+{
+  "job_label": "Simple Automated Job - {{$timestamp}}",
+  "job_id": "{{job_id}}",
+  "input_storage": {
+    "input_id": "source-{{job_id}}",
+    "provider": "http",
+    "http": {
+      "url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+    }
+  },
+  "output_storage": {
+    "output_id": "dest-{{job_id}}",
+    "provider": "gcs",
+    "gcs": {
+      "bucket": "media-development-1",
+      "key": "videos/simple/{{job_id}}"
+    }
+  },
+  "job_settings": {
+    "hardware_acceleration": "auto"
+  },
+  "outputs": {
+    "streaming_package": {
+      "enable": true,
+      "video": {
+        "encoder": "h264_nvenc",
+        "renditions": [
+          {
+            "tag": "1080p",
+            "height": 1080,
+            "encoder": "h264_nvenc",
+            "rate_control": { "mode": "abr", "bitrate": "5000k" }
+          },
+          {
+            "tag": "720p",
+            "height": 720,
+            "encoder": "h264_nvenc",
+            "rate_control": { "mode": "abr", "bitrate": "2800k" }
+          }
+        ]
+      },
+      "audio": { "mode": "auto" },
+      "subtitles": { "mode": "auto" },
+      "packaging": {
+        "segment_duration_seconds": 2,
+        "formats": ["dash", "hls"]
+      }
+    },
+    "thumbnail_gallery": {
+      "enable": true,
+      "format": "vtt_sprite",
+      "interval_seconds": 10,
+      "dimensions": { "width": 160 }
+    }
+  }
+}
+
+
+###
+# @name SubmitSimpleJob Azure
+# This job has minimal configuration, relying on "auto" modes.
+# It uses the S3 credentials saved via credentials.http.
+POST {{api_v1}}/jobs
+Content-Type: application/json
+
+{
+  "job_label": "Simple Automated Job - {{$timestamp}}",
+  "job_id": "{{job_id}}",
+  "input_storage": {
+    "input_id": "source-{{job_id}}",
+    "provider": "azure",
+    "azure": {
+      "container": "media-developement-1",
+      "key": "test-veryfast.mp4"
+    }
+  },
+  "output_storage": {
+    "output_id": "dest-{{job_id}}",
+    "provider": "azure",
+    "azure": {
+      "container": "media-developement-1",
+      "key": "videos/simple/{{job_id}}"
+    }
+  },
+  "job_settings": {
+    "hardware_acceleration": "auto"
+  },
+  "outputs": {
+    "streaming_package": {
+      "enable": true,
+      "video": {
+        "encoder": "h264_nvenc",
+        "renditions": []
+      },
+      "audio": { "mode": "auto" },
+      "subtitles": { "mode": "auto" },
+      "packaging": {
+        "segment_duration_seconds": 2,
+        "formats": ["dash", "hls"]
+      }
+    },
+    "thumbnail": {
+      "enable": true,
+      "format": "vtt_sprite",
+      "interval_seconds": 10,
+      "dimensions": { "width": 160 }
+    }
+  }
+}

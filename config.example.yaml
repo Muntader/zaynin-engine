@@ -1,0 +1,54 @@
+# Zaynin Engine   example configuration
+# Copy to config.yaml and adjust for your environment.
+
+node:
+  id: "worker-dev-01"
+  type: "worker"
+  region: ""
+
+control_plane:
+  address: "localhost:50051"
+  heartbeat_interval: 15
+
+server:
+  bind_address: "0.0.0.0"
+  grpc_port: 50052
+  http_port: 8080
+  grpc_reflection_enabled: true  # set false in production
+  pprof_enabled: false
+  pprof_port: 6060
+  media:
+    rtmp_port: 1936
+    srt_port: 9000
+
+logging:
+  level: "info"
+  format: "text"
+
+resources:
+  cpu_cores_per_job: 4
+  estimated_vram_gb_per_session: 6
+  dynamic_port_range:
+    start: 20000
+    end: 21000
+
+storage:
+  paths:
+    live_media: "./storage/public/live"
+    live_archive: "./storage/watcher/live"
+    vod_workspace: "./storage/vod_workspace"
+
+tools:
+  bin_dir: "./bin"
+  # External binaries are not in git. Expected layout under bin_dir:
+  #   ffmpeg, ffprobe
+  #   shaka-packager (or packager from GitHub releases)
+  #   bento4/bin/mp4fragment, mp4dash, mp4hls (+ Python utils for mp4dash scripts)
+
+redis:
+  address: "localhost:6379"
+  password: ""
+  db: 0
+
+webhooks:
+  notification_url: ""

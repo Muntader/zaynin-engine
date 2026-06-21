@@ -1,0 +1,53 @@
+{
+  "id":  "xxx",
+  "rtmp_key": "xxxx",
+  "status":  "created",
+  "created_at": "2006-01-02T15:04:05",
+  "pipeline": {
+    "name": "Local Test Auth Pipeline",
+    "record_source": true,
+    "transcode": {
+      "enable": true,
+      "encoder": "nvidia",
+      "keyframe_interval": 2,
+      "source_fps": 60,
+      "content_hint": "gaming",
+      "codec": "h264",
+      "mode": "standard",
+      "renditions": [
+        {
+          "width": 1920,
+          "height": 1080,
+          "video_bitrate": "4500k",
+          "audio_bitrate": "128k"
+        },
+        {
+          "width": 1280,
+          "height": 720,
+          "video_bitrate": "2800k",
+          "audio_bitrate": "128k"
+        }
+      ]
+    },
+    "package": {
+      "enabled": false,
+      "enable_hls": true,
+      "enable_dash": false,
+      "mode": "balanced",
+      "segment_duration": 2,
+      "fragment_duration": 2,
+      "minimum_update_period":  2,
+      "preserved_segments_outside_live_window": 5,
+      "time_shift_buffer_depth": 20,
+      "dvr_enabled": true
+    },
+    "cleanup": {
+      "packaging": {
+        "action": "delete"
+      }
+    }
+  }
+}
+
+{"name": "Pro Gaming Multi-Audio Pipeline", "cleanup": {"packaging": {"action": "delete"}}, "package": {"enabled": true, "enable_hls": true, "dvr_enabled": true, "segment_duration": 2, "fragment_duration": 0.5, "time_shift_buffer_depth": 60}, "transcode": {"codec": "h264", "enabled": true, "audio_renditions": [{"codec": "aac", "label": "English", "bitrate": 160, "language": "en", "input_track_index": 0}, {"codec": "aac", "label": "Português", "bitrate": 128, "language": "pt", "input_track_index": 1}, {"codec": "aac", "label": "Italiano", "bitrate": 128, "language": "it", "input_track_index": 2}], "video_renditions": [{"width": 1920, "height": 1080, "params": {"tune": "zerolatency", "preset": "fast"}, "video_bitrate": 6000000}, {"width": 1280, "height": 720, "params": {"tune": "zerolatency", "preset": "fast"}, "video_bitrate": 2200000}], "hardware_preference": "force_cpu"}, "record_source": true}
+{"name": "Pro Gaming Multi-Audio Pipeline", "cleanup": {"packaging": {"action": "delete"}}, "package": {"enabled": true, "enable_hls": true, "dvr_enabled": true, "segment_duration": 2, "fragment_duration": 0.5, "time_shift_buffer_depth": 60}, "transcode": {"codec": "h264", "enabled": true, "audio_renditions": [], "video_renditions": [], "hardware_preference": "force_cpu"}, "record_source": true}

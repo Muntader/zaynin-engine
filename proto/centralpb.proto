@@ -1,0 +1,123 @@
+// proto/central.proto
+syntax = "proto3";
+
+package centralpb;
+
+option go_package = "github.com/muntader/zaynin-engine/gen/centralpb";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+import "google/protobuf/timestamp.proto";
+
+// ===================================================================
+//  The Unified Central API Service
+// ===================================================================
+
+service CentralAPI {
+  // A generic heartbeat endpoint for any node (worker, origin, edge) to check in.
+  rpc Heartbeat(NodeHeartbeatRequest) returns (google.protobuf.Empty);
+
+  // Assigns a 'worker' node to handle a new incoming stream.
+  rpc AssignStreamNode(AssignStreamNodeRequest) returns (AssignStreamNodeResponse);
+
+  // An endpoint for workers to report the status of long-running VOD jobs.
+  rpc ReportVODStatus(ReportVODStatusRequest) returns (ReportVODStatusResponse);
+}
+
+
+// ===================================================================
+//  Message Definitions
+// ===================================================================
+
+// Defines the role of the node sending the heartbeat.
+enum NodeType {
+  NODE_TYPE_UNSPECIFIED = 0;
+  NODE_TYPE_WORKER = 1;
+  NODE_TYPE_ORIGIN = 2;
+  NODE_TYPE_EDGE = 3;
+}
+
+// --- Messages for the Node Heartbeat RPC ---
+
+message NodeHeartbeatRequest {
+  string node_id = 1;         // The stable, unique ID for this node.
+  string hostname = 2;        // The OS hostname.
+  NodeType node_type = 3;     // The role of this node.
+  string region = 4;          // The region the node is deployed in (e.g., 'us-east-1').
+
+  // Networking Info
+  string public_ip = 5;
+  string private_ip = 6;
+  int32 grpc_port = 7;        // The port for internal gRPC communication.
+  int32 http_port = 8;        // The port for metrics, health checks, etc.
+
+  // A flexible structure for static, role-specific configuration.
+  // Example for a worker: {"rtmp_port": 1935, "srt_port": 9000, "gpu_type": "nvidia-t4"}
+  google.protobuf.Struct metadata = 9;
+
+  // Dynamic Load Status
+  NodeLoadStatus status = 10;
+}
+
+message NodeLoadStatus {
+  float cpu_usage_percent = 1;
+  float ram_usage_percent = 2;
+  int32 active_connections = 3; // Generalize from active_streams
+  repeated GpuLoadStatus gpus = 4;
+}
+
+message GpuLoadStatus {
+  int32 device_id = 1;
+  string model_name = 2;
+  float gpu_usage_percent = 3;
+  float vram_usage_percent = 4;
+}
+
+
+// --- Messages for the Stream Assignment RPC ---
+
+message AssignStreamNodeRequest {
+  string stream_key = 1;
+}
+
+message AssignStreamNodeResponse {
+  NodeAssignment assignment = 1;
+  string error_message = 2; // For failures like "no workers available".
+}
+
+// NodeAssignment contains all info the proxy needs to connect to an assigned worker node.
+message NodeAssignment {
+  string node_id = 1;
+  string hostname = 2;
+  string public_ip = 3;
+  string private_ip = 4;
+  google.protobuf.Struct metadata = 5;
+}
+
+// --- VOD Job Reporting Messages ---
+
+// An enumeration of all possible phases for a VOD job.
+enum VODJobPhase {
+  PHASE_UNSPECIFIED = 0;
+  PHASE_PENDING = 1;
+  PHASE_DOWNLOADING = 2;
+  PHASE_TRANSCODING = 3;
+  PHASE_PACKAGING = 4;
+  PHASE_UPLOADING = 5;
+  PHASE_COMPLETED = 6;
+  PHASE_FAILED = 7;
+}
+
+message ReportVODStatusRequest {
+  string job_id = 1;
+  VODJobPhase phase = 2;
+  google.protobuf.Timestamp timestamp = 3;
+  // Details can be either a simple message or a structured error.
+  oneof details {
+    string message = 4;
+    string error_message = 5;
+  }
+}
+
+// The response is empty as this is a fire-and-forget update.
+message ReportVODStatusResponse {}

@@ -1,0 +1,56 @@
+{
+  "name": "Local Test Auth Pipeline",
+  "record_source": true,
+  "transcode": {
+    "encoder": "nvidia",
+    "keyframe_interval": 2,
+    "source_fps": 30,
+    "content_hint": "gaming",
+    "codec": "h264",
+    "mode": "low_latency",
+    "renditions": [
+      {
+        "width": 2560,
+        "height": 1440,
+        "video_bitrate": "7000k",
+        "audio_bitrate": "192k"
+      },
+      {
+        "width": 1920,
+        "height": 1080,
+        "video_bitrate": "4000k",
+        "audio_bitrate": "128k"
+      },
+      {
+        "width": 1280,
+        "height": 720,
+        "video_bitrate": "2500k",
+        "audio_bitrate": "128k"
+      },
+      {
+        "width": 854,
+        "height": 480,
+        "video_bitrate": "1200k",
+        "audio_bitrate": "96k"
+      },
+      {
+        "width": 640,
+        "height": 360,
+        "video_bitrate": "700k",
+        "audio_bitrate": "96k"
+      },
+      {
+        "width": 426,
+        "height": 240,
+        "video_bitrate": "400k",
+        "audio_bitrate": "64k"
+      }
+    ]
+  },
+  "package": {
+    "enabled": true,
+    "segment_duration": 2,
+    "enable_hls": true,
+    "enable_dash": false
+  }
+}

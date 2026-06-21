@@ -1,0 +1,307 @@
+// proto/workerpb.proto
+
+syntax = "proto3";
+
+package worker;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+
+option go_package = "github.com/muntader/zaynin-engine/gen/workerpb";
+
+// ===================================================================
+// Main gRPC Service Definition
+// ===================================================================
+
+service WorkerService {
+  // --- Monitor Service ---
+  rpc GetSystemStatus(google.protobuf.Empty) returns (SystemStatusResponse);
+
+  // --- Log Service ---
+  rpc GetLogs(GetLogsRequest) returns (GetLogsResponse);
+
+  // --- VOD Job Service ---
+  rpc CreateJob(CreateJobRequest) returns (CreateJobResponse);
+
+  // --- Live Stream Service ---
+  rpc PrepareStream(PrepareStreamRequest) returns (PrepareStreamResponse);
+  rpc ListAllActiveStreams(google.protobuf.Empty) returns (ListStreamsResponse);
+  rpc ListRecentlyClosedStreams(ListRecentlyClosedStreamsRequest) returns (ListStreamsResponse);
+  rpc GetStreamDetails(GetStreamDetailsRequest) returns (StreamDetailsResponse);
+  rpc ForceStopStream(ForceStopStreamRequest) returns (ForceStopStreamResponse);
+
+  // --- Egress Service ---
+  rpc GetConfiguredSinksForStream(GetSinksRequest) returns (GetSinksResponse);
+  rpc AddRtmpPushSink(AddRtmpPushSinkRequest) returns (AddRtmpPushSinkResponse);
+  rpc StopSink(StopSinkRequest) returns (google.protobuf.Empty);
+
+  // --- Credentials Service ---
+  rpc SaveCredentials(SaveCredentialsRequest) returns (google.protobuf.Empty);
+}
+
+
+// ===================================================================
+// Message Definitions
+// ===================================================================
+
+// --- Monitor Messages ---
+
+message SystemStatusResponse {
+  CPUStatus cpu_usage = 1;
+  GPUStatus gpu_usage = 2;
+  repeated QueueInfo queues = 3;
+}
+
+message CPUStatus {
+  double usage_percent = 1;
+}
+
+message GPUStatus {
+  int32 vram_used_gb = 1;
+  int32 vram_total_gb = 2;
+  double vram_usage_percent = 3;
+}
+
+message QueueInfo {
+  string name = 1;
+  int32 active = 2;
+  int32 pending = 3;
+  int32 total = 4;
+}
+
+// --- Log Messages ---
+
+message GetLogsRequest {
+  string level = 1;  // Optional: "info", "warn", "error"
+  int64 offset = 2;  // Optional: Defaults to 0
+  int64 limit = 3;   // Optional: Defaults to 50
+}
+
+message LogEntry {
+  string timestamp = 1;
+  string level = 2;
+  string message = 3;
+  google.protobuf.Struct fields = 4;
+}
+
+
+message GetLogsResponse {
+  repeated LogEntry logs = 1;
+}
+
+
+// --- VOD Job Messages ---
+
+// Represents the VOD job configuration.
+// This should mirror your `types.Config` struct.
+// Using google.protobuf.Struct allows for flexible, JSON-like data.
+message CreateJobRequest {
+  google.protobuf.Struct config = 1;
+}
+
+message CreateJobResponse {
+  string message = 1;
+  string job_id = 2;
+  string queue_id = 3;
+  string queue = 4;
+}
+
+
+// --- Live Stream & Egress Messages ---
+// You would define these based on the actual structs returned by your services.
+// Using Struct here as a placeholder for complex, nested data.
+message StreamInfo {
+  string stream_id = 1;
+  string node_id = 2;
+  google.protobuf.Struct details = 4;
+}
+
+message ListStreamsResponse {
+  repeated StreamInfo streams = 1;
+}
+
+message ListRecentlyClosedStreamsRequest {
+  int64 count = 1;
+}
+
+message GetStreamDetailsRequest {
+  string stream_id = 1;
+}
+
+
+// NEW: Define a message for the stream's resolution.
+message StreamResolution {
+  int32 width = 1;
+  int32 height = 2;
+}
+
+// NEW: Define the strongly-typed details message.
+message StreamDetails {
+  string start_time_rfc3339 = 1; // Use string for timestamps
+  StreamResolution resolution = 2;
+  int64 bitrate_kbps = 3;
+  string video_codec = 4;
+  string audio_codec = 5;
+  int64 uptime_seconds = 6;
+}
+
+
+// PrepareStreamRequest contains the full configuration for a single stream.
+message PrepareStreamRequest {
+  // The RTMP key, used for logging and as a potential lookup key.
+  string rtmp_key = 1;
+
+  // The complete stream configuration, serialized as a JSON string.
+  // This is the payload that will be stored temporarily in Redis with a TTL.
+  string config_json = 2;
+}
+
+// PrepareStreamResponse is a simple acknowledgment.
+message PrepareStreamResponse {
+  bool success = 1;
+  string message = 2; // e.g., "Configuration accepted" or an error message.
+}
+
+
+message StreamDetailsResponse {
+  google.protobuf.Struct details = 1;
+}
+
+message ForceStopStreamRequest {
+  string stream_id = 1;
+}
+
+message ForceStopStreamResponse {
+  string message = 1;
+}
+
+message GetSinksRequest {
+  string stream_id = 1;
+}
+
+message GetSinksResponse {
+  repeated google.protobuf.Struct sinks = 1;
+}
+
+message AddRtmpPushSinkRequest {
+  string stream_id = 1;
+  string platform = 2;   // e.g., "youtube", "twitch"
+  string remote_url = 3; // The full RTMP URL (rtmp://a.rtmp.youtube.com/live2)
+  string api_key = 4;    // The stream key provided by the platform
+}
+message AddRtmpPushSinkResponse {
+  string message = 1;
+  string egress_id = 2;
+}
+
+message StopSinkRequest {
+  string stream_id = 1;
+  string egress_id = 2;
+}
+
+
+// --- Credentials Messages ---
+
+// Uses a 'oneof' to handle different credential types in a single RPC.
+message SaveCredentialsRequest {
+  string provider = 1;
+  oneof credentials {
+    AWSCredentials aws = 2;
+    GCSCredentials gcs = 3;
+    AzureCredentials azure = 4;
+    SFTPCredentials sftp = 5;
+  }
+}
+
+message AWSCredentials {
+  string access_key_id = 1;
+  string secret_access_key = 2;
+}
+
+message GCSCredentials {
+  string service_account_json = 1;
+}
+
+message AzureCredentials {
+  string sas_token = 1;
+}
+
+message SFTPCredentials {
+  string user = 1;
+  string host = 2;
+  int32 port = 3;
+  string password = 4;
+  string private_key = 5;
+}
+
+
+
+
+message GenerateWorkerBootstrapTokenRequest {
+  // A human-readable name for the worker, for logging purposes.
+  string worker_name = 1;
+  // How long the token is valid for, in seconds (e.g., 3600 for 1 hour).
+  int64 ttl_seconds = 2;
+}
+
+message GenerateWorkerBootstrapTokenResponse {
+  // The secure, single-use token.
+  string bootstrap_token = 1;
+  // The full command for the administrator to copy and paste onto the new worker machine.
+  string full_command = 2;
+}
+
+message RegisterWorkerRequest {
+  // The one-time token provided by the panel.
+  string bootstrap_token = 1;
+  // Information the worker provides about itself.
+  string hostname = 2;
+  string ip_address = 3;
+}
+
+message RegisterWorkerResponse {
+  // The new, permanent, unique ID for this worker. The worker must store this.
+  string worker_id = 1;
+  // The full configuration the worker should use, sent as a flexible JSON-like object.
+  google.protobuf.Struct worker_config = 2;
+}
+
+message HeartbeatRequest {
+  // The permanent ID the worker received upon registration.
+  string worker_id = 1;
+  // Current resource utilization metrics.
+  float cpu_usage_percent = 2;
+  float gpu_usage_percent = 3;
+  float ram_usage_percent = 4;
+  // Current workload metrics.
+  int32 active_streams = 5;
+}
+
+
+// --- VOD Job Reporting Messages ---
+
+// An enumeration of all possible phases for a VOD job.
+enum VODJobPhase {
+  PHASE_UNSPECIFIED = 0;
+  PHASE_PENDING = 1;
+  PHASE_DOWNLOADING = 2;
+  PHASE_TRANSCODING = 3;
+  PHASE_PACKAGING = 4;
+  PHASE_UPLOADING = 5;
+  PHASE_COMPLETED = 6;
+  PHASE_FAILED = 7;
+}
+
+message ReportVODStatusRequest {
+  string job_id = 1;
+  VODJobPhase phase = 2;
+  google.protobuf.Timestamp timestamp = 3;
+  // Details can be either a simple message or a structured error.
+  oneof details {
+    string message = 4;
+    string error_message = 5;
+  }
+}
+
+// The response is empty as this is a fire-and-forget update.
+message ReportVODStatusResponse {}

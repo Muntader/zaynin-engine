@@ -1,0 +1,97 @@
+# job_advanced.http
+#
+# An advanced, heavily customized job submission.
+# This example provides its own S3 credentials directly in the payload,
+# which will be used instead of any globally stored credentials.
+#
+# Variables
+@hostname = http://localhost:8081
+@api_v1 = {{hostname}}/api/v1
+@job_id = {{$guid}}
+
+###
+# @name SubmitAdvancedJobWithDRM
+# A complex job with multiple video/audio renditions and DRM.
+POST {{api_v1}}/jobs
+Content-Type: application/json
+
+{
+  "job_label": "Advanced HDR Transcode - {{$timestamp}}",
+  "job_id": "{{job_id}}",
+  "input_storage": {
+    "input_id": "source-{{job_id}}",
+    "provider": "http",
+    "http": {
+      "url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4"
+    }
+  },
+  "output_storage": {
+    "output_id": "dest-{{job_id}}",
+    "provider": "s3",
+    "s3": {
+      "bucket": "media-development-1",
+      "key": "videos/advanced/{{job_id}}",
+      "region": "us-east-1"
+    }
+  },
+  "outputs": {
+    "streaming_package": {
+      "enable": true,
+      "allow_soft_fail": false,
+      "allow_upscale": true,
+      "video": {
+        "renditions": [
+          { "tag": "1080p_HEVC_SDR", "height": 1080, "encoder": "hevc_nvenc", "profile": "main10", "rate_control": { "mode": "abr", "bitrate": "7000k" }, "filtering": { "hdr_to_sdr": { "enable": true } } },
+          { "tag": "720p_H264_Legacy", "height": 720, "encoder": "h264_nvenc", "profile": "high", "rate_control": { "mode": "abr", "bitrate": "5000k" }, "filtering": { "hdr_to_sdr": { "enable": true } } }
+        ]
+      },
+      "audio": {
+        "mode": "custom",
+        "normalization": { "enable": true, "target_lufs": -14.0 },
+        "tracks": [
+          { "select": { "language": "en" }, "output": { "codec": "aac", "bitrate": "128k", "label": "English", "is_default": true } }
+        ]
+      },
+      "subtitles": {
+        "mode": "custom",
+        "tracks": [
+          { "select": { "language": "en", "forced": false }, "action": "convert_to_vtt", "label": "English CC" },
+          { "select": { "language": "en", "forced": true }, "action": "burn_in" }
+        ]
+      },
+      "packaging": {
+        "segment_duration_seconds": 4,
+        "formats": ["hls", "dash"],
+          "drm": {
+          "enable": true,
+          "content_id": "{{job_id}}",
+          "provider": {
+            "type": "axinom",
+            "config": {
+              "name": "8c5d46f5-9586-49c5-8ab6-4077fc80862f",
+              "signing_key": "136895ABCB0B424C05905AAA07DD801386277E558A5523B6D3A2CD6FE9163E2F",
+              "signing_iv": "DA6E00754E38E6192F85D34B38F1DCCE"
+            }
+          },
+          "dash": {
+            "systems": [
+              "widevine"
+            ]
+          },
+          "hls": {
+            "systems": [
+              "fairplay"
+            ]
+          },
+          "static_keys": []
+        }
+      }
+    },
+    "thumbnail_gallery": {
+      "enable": true,
+      "format": "vtt_sprite",
+      "interval_seconds": 10,
+      "dimensions": { "width": 160 }
+    }
+  }
+}

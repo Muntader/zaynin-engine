@@ -1,0 +1,20 @@
+# Local secrets and credentials
+.worker-secrets
+zaynin-credentials.db
+*.db
+
+# Local config (use config.example.yaml as template)
+config.yaml
+
+# Runtime media output
+storage/
+
+# IDE
+.idea/
+
+# Bundled binaries — install FFmpeg, Bento4, and Shaka Packager separately (see README)
+bin/*
+
+# Python cache from bundled tools
+__pycache__/
+*.pyc
