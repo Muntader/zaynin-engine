@@ -318,7 +318,7 @@ func Package(ctx context.Context, analysisReport *types.AnalysisReport, opts Pac
 	}
 	bentoPackager := packager.NewBento4Packager(mp4dashPath, mp4hlsPath)
 
-	formatsToProcess := opts.PackagingConfig.Formats
+	formatsToProcess := collapsePackagingFormats(opts.PackagingConfig.Formats)
 	if len(formatsToProcess) == 0 {
 		formatsToProcess = []string{"cmaf"} // default when nothing specified
 	}
@@ -498,6 +498,46 @@ func processDrmConfig(cfg DrmConfig) (*drm.DRMKeys, error) {
 
 	log.Printf("Requesting DRM keys for systems: %v", allSystems)
 	return keyService.FetchKeys(context.Background(), cfg.ContentID, allSystems)
+}
+
+// collapsePackagingFormats merges formats that mp4dash handles in a single pass.
+// Requesting both "hls" and "dash" would otherwise run mp4dash twice into the same
+// output-dir; the second invocation fails because the directory already exists.
+func collapsePackagingFormats(formats []string) []string {
+	if len(formats) == 0 {
+		return formats
+	}
+
+	hasHLS, hasDASH, hasCMAF := false, false, false
+	others := make([]string, 0, len(formats))
+	seen := make(map[string]struct{})
+
+	for _, f := range formats {
+		switch strings.ToLower(f) {
+		case "hls":
+			hasHLS = true
+		case "dash":
+			hasDASH = true
+		case "cmaf":
+			hasCMAF = true
+		default:
+			if _, ok := seen[f]; !ok {
+				seen[f] = struct{}{}
+				others = append(others, f)
+			}
+		}
+	}
+
+	if hasCMAF || (hasHLS && hasDASH) {
+		return append([]string{"cmaf"}, others...)
+	}
+	if hasHLS {
+		return append([]string{"hls"}, others...)
+	}
+	if hasDASH {
+		return append([]string{"dash"}, others...)
+	}
+	return formats
 }
 
 // buildBasePackagerOptions finds fragmented files and wires up packager options.

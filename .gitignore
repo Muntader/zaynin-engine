@@ -1,5 +1,7 @@
 # Local secrets and credentials
 .worker-secrets
+test/r2.env
+test/* 
 zaynin-credentials.db
 *.db
 

@@ -68,6 +68,8 @@ func Generate(ctx context.Context, task Task) (*GenerationResult, error) {
 			return generateSingleImagesByTimestamp(ctx, task)
 		}
 		return generateSingleImagesByInterval(ctx, task)
+	case "interval":
+		return generateSingleImagesByInterval(ctx, task)
 	default:
 		return nil, fmt.Errorf("unsupported thumbnail mode: '%s'", task.Mode)
 	}
@@ -508,10 +510,20 @@ func validateTask(task Task) error {
 		if task.IntervalSeconds <= 0 {
 			return fmt.Errorf("IntervalSeconds must be greater than 0, got: %f", task.IntervalSeconds)
 		}
+	case "interval":
+		if task.IntervalSeconds <= 0 {
+			return fmt.Errorf("interval mode requires a positive interval_seconds, got: %f", task.IntervalSeconds)
+		}
+		if task.FilenamePattern == "" {
+			return fmt.Errorf("interval mode requires a FilenamePattern")
+		}
+		if !strings.Contains(task.FilenamePattern, "{index}") {
+			return fmt.Errorf("FilenamePattern must contain '{index}' placeholder")
+		}
 	case "":
 		return fmt.Errorf("Mode is required")
 	default:
-		return fmt.Errorf("unsupported mode: '%s'. Supported modes are: vtt_sprite, bif, single_image", task.Mode)
+		return fmt.Errorf("unsupported mode: '%s'. Supported modes are: vtt_sprite, bif, single_image, interval", task.Mode)
 	}
 
 	if task.ImageFormat != "jpg" && task.ImageFormat != "webp" {
@@ -588,5 +600,9 @@ func generateFilename(task Task, index int, timestamp float64) (string, error) {
 	pattern = strings.ReplaceAll(pattern, "{index}", fmt.Sprintf("%04d", index+1))
 	pattern = strings.ReplaceAll(pattern, "{timestamp_s}", strconv.FormatInt(int64(math.Round(timestamp)), 10))
 	pattern = strings.ReplaceAll(pattern, "{timestamp_ms}", strconv.FormatInt(int64(math.Round(timestamp*1000)), 10))
-	return filepath.Join(task.OutputDir, pattern), nil
+	path := filepath.Join(task.OutputDir, pattern)
+	if filepath.Ext(path) == "" && task.ImageFormat != "" {
+		path += "." + task.ImageFormat
+	}
+	return path, nil
 }

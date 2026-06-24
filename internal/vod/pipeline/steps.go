@@ -174,7 +174,7 @@ func fragmentAndPackage(j *JobContext) error {
 
 	outputDir := filepath.Join(j.WorkspacePath, "outputs")
 	if err := os.RemoveAll(outputDir); err != nil {
-		slog.Warn("Could not clean outputs directory, packaging may fail", "error", err)
+		return fmt.Errorf("could not clean outputs directory before packaging: %w", err)
 	}
 
 	pkgOpts := zayninengine.PackageOptions{
